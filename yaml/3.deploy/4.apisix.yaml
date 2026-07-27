@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: apisix
+spec:
+  replicas: 1
+  serviceName: apisix
+  selector:
+    matchLabels:
+      app: apisix
+  template:
+    metadata:
+      labels:
+        app: apisix
+    spec:
+      containers:
+        - name: apisix
+          image: registry.cn-qingdao.aliyuncs.com/dataease/apisix:3.6.0-debian
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: 4
+              memory: 8G
+            requests:
+              memory: 200Mi
+              cpu: 0.2
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+          ports:
+            - name: apisix-1  
+              containerPort: 9180
+            - name: apisix-2 
+              containerPort: 9080
+            # - name: apisix-3  
+            #   containerPort: 9091
+            # - name: apisix-4  
+            #   containerPort: 9443
+            # - name: apisix-5  
+            #   containerPort: 9092
+          volumeMounts:
+            - mountPath: /usr/local/apisix/conf/config.yaml
+              name: opt-apisix-config
+              subPath: config.yml
+            - mountPath: /usr/local/apisix/logs
+              name: apisix-logs
+            - mountPath: /usr/local/apisix/apisix/plugins/cas-auth.lua
+              name: cas-auth
+              subPath: cas-auth.lua
+            - mountPath: /usr/local/apisix/apisix/plugins/openid-connect.lua
+              name: openid-connect
+              subPath: openid-connect.lua
+      volumes:
+        - name: opt-apisix-config
+          configMap:
+            defaultMode: 420
+            name: dataease-application
+        - name: apisix-logs
+          persistentVolumeClaim:
+            claimName: apisix-logs
+        - name: cas-auth
+          configMap:
+            defaultMode: 420
+            name: apisix-cas-auth
+        - name: openid-connect
+          configMap:
+            defaultMode: 420
+            name: apisix-openid-connect
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apisix
+  labels:
+    app: apisix
+spec:
+  clusterIP: None
+  selector:
+    app: apisix
+  ports:
+    - name: tcp-9180  
+      port: 9180  
+      protocol: TCP  
+    - name: tcp-9080  
+      port: 9080  
+      protocol: TCP  
+    # - name: tcp-9091  
+    #   port: 9091  
+    #   protocol: TCP  
+    # - name: tcp-9443  
+    #   port: 9443  
+    #   protocol: TCP  
+    # - name: tcp-9092  
+    #   port: 9092  
+    #   protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dataease-apisix-nodeport
+  labels:
+    app: apisix
+spec:
+  type: NodePort
+  selector:
+    app: apisix
+  ports:
+  - port: 9080
+    targetPort: 9080
+    nodePort: 30090

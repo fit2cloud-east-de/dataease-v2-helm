@@ -1,0 +1,18 @@
+apiVersion: v2
+name: dataease-helm
+description: Helm Chart for deploying DataEase v2.10.20 (aligned with official installer: Playwright)
+type: application
+version: 2.10.20
+appVersion: v2.10.20
+home: https://dataease.io
+icon: https://dataease.io/images/logo/favicon.ico
+sources:
+  - https://github.com/fit2cloud-east-de/dataease-v2-helm
+  - https://github.com/dataease/dataease
+keywords:
+  - dataease
+  - bi
+  - dashboard
+maintainers:
+  - name: Wanpl-Java
+    email: 810220955@qq.com

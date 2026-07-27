@@ -1,0 +1,89 @@
+{{ if .Values.mysql.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{.Values.common.mysql.host}}
+spec:
+  replicas: 1
+  serviceName: {{.Values.common.mysql.host}}
+  selector:
+    matchLabels:
+      app: {{.Values.common.mysql.host}}
+  template:
+    metadata:
+      labels:
+        app: {{.Values.common.mysql.host}}
+    spec:
+      containers:
+        - name: {{.Values.common.mysql.host}}
+          image: {{.Values.common.imagePrefix}}{{.Values.mysql.image}}:{{.Values.mysql.imageTag}}
+          imagePullPolicy: {{.Values.common.imagePullPolicy}}
+          resources:
+            limits:
+              cpu: {{.Values.mysql.resourceLimits.cpu}}
+              memory: {{.Values.mysql.resourceLimits.memory}}
+            requests:
+              memory: 500Mi
+              cpu: 1
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: {{.Values.common.mysql.password}}
+          ports:
+            - name: tcp
+              containerPort: 3306
+          volumeMounts:
+            - mountPath: /etc/mysql/conf.d/my.cnf
+              name: opt-dataease-config
+              subPath: my.cnf
+            - mountPath: /docker-entrypoint-initdb.d/init.sql
+              name: init-mysql
+              subPath: init.sql
+            - mountPath: /var/lib/mysql
+              name: mysql-data
+      {{if ne (.Values.common.imagePullSecrets | default "nil") "nil"}}
+      imagePullSecrets:
+        - name: {{.Values.common.imagePullSecrets}}
+      {{ end }}
+      volumes:
+        - configMap:
+            defaultMode: 420
+            name: mysql-config
+          name: opt-dataease-config
+        - configMap:
+            defaultMode: 420
+            name: mysql-config
+          name: init-mysql
+        - name: mysql-data
+          persistentVolumeClaim:
+            claimName: mysql-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{.Values.common.mysql.host}}
+  labels:
+    app: {{.Values.common.mysql.host}}
+spec:
+  clusterIP: None
+  selector:
+    app: {{.Values.common.mysql.host}}
+  ports:
+    - name: tcp
+      port: {{.Values.common.mysql.port}}
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dataease-mysql-nodeport
+  labels:
+    app: {{.Values.common.mysql.host}}
+spec:
+  type: NodePort
+  selector:
+    app: {{.Values.common.mysql.host}}
+  ports:
+  - port: {{.Values.common.mysql.port}}
+    targetPort: {{.Values.common.mysql.port}}
+    nodePort: {{.Values.common.mysql.nodeport_port}}
+{{end}}
