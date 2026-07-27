@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: de-selenium
+spec:
+  replicas: 1
+  serviceName: de-selenium
+  selector:
+    matchLabels:
+      app: de-selenium
+  template:
+    metadata:
+      labels:
+        app: de-selenium
+    spec:
+      containers:
+        - name: de-selenium
+          image: registry.cn-qingdao.aliyuncs.com/dataease/standalone-chromium:123.0
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: 2
+              memory: 4G
+            requests:
+              memory: 200Mi
+              cpu: 0.2
+          env:
+            - name: SE_START_XVFB
+              value: "false"
+            - name: SE_ENABLE_BROWSER_LEFTOVERS_CLEANUP
+              value: "true"
+            - name: SE_NODE_OVERRIDE_MAX_SESSIONS
+              value: "true"
+            - name: SE_NODE_MAX_SESSIONS
+              value: "5"
+            - name: TZ
+              value: "Asia/Shanghai"
+          volumeMounts:  
+            - name: dshm  
+              mountPath: /dev/shm
+      volumes:  
+        - name: dshm  
+          emptyDir:  
+            medium: Memory  
+            sizeLimit: "2Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: de-selenium
+  labels:
+    app: de-selenium
+spec:
+  clusterIP: None
+  selector:
+    app: de-selenium
+  ports:
+    - name: tcp-4444
+      port: 4444
+      protocol: TCP
