@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: apisix-etcd
+spec:
+  replicas: 1
+  serviceName: apisix-etcd
+  selector:
+    matchLabels:
+      app: apisix-etcd
+  template:
+    metadata:
+      labels:
+        app: apisix-etcd
+    spec:
+      containers:
+        - name: apisix-etcd
+          image: registry.cn-qingdao.aliyuncs.com/dataease/etcd:3.5.10
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: 4
+              memory: 8G
+            requests:
+              memory: 200Mi
+              cpu: 0.2
+          env:
+            - name: ETCD_ENABLE_V2
+              value: "true"
+            - name: ALLOW_NONE_AUTHENTICATION
+              value: "yes"
+            - name: ETCD_ADVERTISE_CLIENT_URLS
+              value: "http://apisix-etcd:2379"
+          volumeMounts:
+            - mountPath: /bitnami/etcd
+              name: apisix-etcd
+      volumes:
+        - name: apisix-etcd
+          persistentVolumeClaim:
+            claimName: apisix-etcd
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apisix-etcd
+  labels:
+    app: apisix-etcd
+spec:
+  clusterIP: None
+  selector:
+    app: apisix-etcd
+  ports:
+    - name: tcp
+      port: 2379
+      protocol: TCP

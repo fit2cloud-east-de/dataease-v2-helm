@@ -1,0 +1,128 @@
+# DataEase Helm Chart - v2.10.20
+# engine_mode: community | enterprise（企业组件：apisix / playwright / synctask）
+
+ingress:
+  enabled: true
+  host: demo.apps.dataease.com
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50M"
+  https:
+    enabled: false
+    secretName: ""
+
+common:
+  imagePrefix: "registry.cn-qingdao.aliyuncs.com/dataease/"
+  imagePullSecrets: nil
+  storageClass: nfs-sc
+  imagePullPolicy: IfNotPresent
+  mysql:
+    host: mysql-de-v2
+    port: 3306
+    nodeport_port: 30037
+    username: root
+    password: Password123@mysql
+  dataease:
+    host: dataease
+    nodeport_port: 30082
+
+DataEase:
+  enabled: true
+  engine_mode: community
+  image: dataease
+  imageTag: "v2.10.20"
+  replicas: 1
+  resourceLimits:
+    cpu: 4
+    memory: 8G
+  java_options: " -Dfile.encoding=utf-8 -Xmx8192m -Xss5m -Dloader.path=/opt/apps -Dspring.config.additional-location=/opt/apps/config/ -XX:+ExitOnOutOfMemoryError -cp . -jar /opt/apps/app.jar"
+  logout_time: 960
+  context_path:
+  views_limit: 100000
+  dataset_limit: 100000
+  orgin_list: "http://apisix:9080"
+  playwright_server: "http://de-playwright-api:3000/screenshot"
+  dataease_servers: "dataease"
+
+mysql:
+  enabled: true
+  image: mysql
+  imageTag: "8.4.5"
+  resourceLimits:
+    cpu: 4
+    memory: 8G
+  persistence:
+    accessModes: ReadWriteOnce
+    size: 10Gi
+
+playwright:
+  enabled: true
+  host: de-playwright-api
+  image: de-playwright-api
+  replicas: 1
+  imageTag: "v1.58.2-noble"
+  concurrency: 4
+  shmSize: "2Gi"
+  resourceLimits:
+    cpu: 2
+    memory: 4G
+
+synctask:
+  enabled: true
+  host: sync-task-actuator
+  image: dataease-sync-task
+  replicas: 1
+  imageTag: "v2.10.20"
+  resourceLimits:
+    cpu: 4
+    memory: 8G
+  persistence:
+    accessModes: ReadWriteOnce
+    size: 10Gi
+
+apisix:
+  enabled: true
+  host: apisix
+  image: apisix
+  imageTag: "3.14.1-debian"
+  replicas: 1
+  nodeport_port: 30090
+  resourceLimits:
+    cpu: 4
+    memory: 8G
+  key: d2e1a12576104c0ba002181940cb8918
+
+apisixdashboard:
+  enabled: true
+  host: apisix-dashboard
+  image: apisix-dashboard
+  imageTag: "3.0.1-alpine"
+  admin_password: Password123@apisix
+  replicas: 1
+  nodeport_port: 30009
+  resourceLimits:
+    cpu: 1
+    memory: 2G
+
+apisixetcd:
+  enabled: true
+  host: apisix-etcd
+  image: etcd
+  imageTag: "3.5.10"
+  replicas: 1
+  resourceLimits:
+    cpu: 4
+    memory: 8G
+  accessModes: ReadWriteOnce
+  size: 10Gi
+
+systool:
+  image: uhub.service.ucloud.cn/dataease/systool
+  imageTag: latest
+
+logPersistence:
+  accessModes: ReadWriteOnce
+  size: 10Gi
+
+dataPersistence:
+  accessModes: ReadWriteOnce
+  size: 10Gi

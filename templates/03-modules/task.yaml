@@ -1,0 +1,57 @@
+{{ if and (eq .Values.DataEase.engine_mode "enterprise") .Values.synctask.enabled }}  
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{.Values.synctask.host}}
+spec:
+  replicas: {{.Values.synctask.replicas}}
+  serviceName: {{.Values.synctask.host}}
+  selector:
+    matchLabels:
+      app: {{.Values.synctask.host}}
+  template:
+    metadata:
+      labels:
+        app: {{.Values.synctask.host}}
+    spec:
+      containers:
+        - name: {{.Values.synctask.host}}
+          image: {{.Values.common.imagePrefix}}{{.Values.synctask.image}}:{{.Values.synctask.imageTag}}
+          imagePullPolicy: {{.Values.common.imagePullPolicy}}
+          resources:
+            limits:
+              cpu: {{.Values.synctask.resourceLimits.cpu}}
+              memory: {{.Values.synctask.resourceLimits.memory}}
+            requests:
+              memory: 200Mi
+              cpu: 0.2
+          ports:
+            - name: sync-task-port
+              containerPort: 9001
+          volumeMounts:
+            - mountPath: /opt/dataease2.0/logs/sync-task/task-handler-log
+              name: sync-task-logs
+      {{if ne (.Values.common.imagePullSecrets | default "nil") "nil"}}
+      imagePullSecrets:
+        - name: {{.Values.common.imagePullSecrets}}
+      {{ end }}
+      volumes:
+        - name: sync-task-logs
+          persistentVolumeClaim:
+            claimName: sync-task-logs   
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{.Values.synctask.host}}
+  labels:
+    app: {{.Values.synctask.host}}
+spec:
+  clusterIP: None
+  selector:
+    app: {{.Values.synctask.host}}
+  ports:
+    - name: sync-task-port
+      port: 9001
+      protocol: TCP
+{{end}}
