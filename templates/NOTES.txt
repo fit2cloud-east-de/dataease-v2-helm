@@ -1,0 +1,8 @@
+Thanks for installing DataEase.
+
+Default username/password: admin / DataEase@123456
+
+Community NodePort: 30082
+Enterprise (APISIX) NodePort: 30090
+
+Screenshot service uses Playwright (de-playwright-api), aligned with the official DataEase installer.

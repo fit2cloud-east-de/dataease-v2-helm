@@ -1,0 +1,79 @@
+{{ if and (eq .Values.DataEase.engine_mode "enterprise") .Values.playwright.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Values.playwright.host}}
+spec:
+  replicas: {{.Values.playwright.replicas}}
+  selector:
+    matchLabels:
+      app: {{.Values.playwright.host}}
+  template:
+    metadata:
+      labels:
+        app: {{.Values.playwright.host}}
+    spec:
+      containers:
+        - name: {{.Values.playwright.host}}
+          image: {{.Values.common.imagePrefix}}{{.Values.playwright.image}}:{{.Values.playwright.imageTag}}
+          imagePullPolicy: {{.Values.common.imagePullPolicy}}
+          securityContext:
+            privileged: true
+          resources:
+            limits:
+              cpu: {{.Values.playwright.resourceLimits.cpu}}
+              memory: {{.Values.playwright.resourceLimits.memory}}
+            requests:
+              memory: 512Mi
+              cpu: 0.5
+          env:
+            - name: CONCURRENCY
+              value: "{{.Values.playwright.concurrency}}"
+            - name: TZ
+              value: "Asia/Shanghai"
+          ports:
+            - name: http
+              containerPort: 3000
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+      {{if ne (.Values.common.imagePullSecrets | default "nil") "nil"}}
+      imagePullSecrets:
+        - name: {{.Values.common.imagePullSecrets}}
+      {{ end }}
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{.Values.playwright.shmSize}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{.Values.playwright.host}}
+  labels:
+    app: {{.Values.playwright.host}}
+spec:
+  clusterIP: None
+  selector:
+    app: {{.Values.playwright.host}}
+  ports:
+    - name: http
+      port: 3000
+      protocol: TCP
+{{end}}

@@ -1,0 +1,37 @@
+{{if .Values.ingress.enabled}}
+apiVersion: {{ include "dataease.ingress.apiVersion" . }}
+kind: Ingress
+metadata:
+{{- if .Values.ingress.annotations }}
+  annotations:
+{{ toYaml .Values.ingress.annotations | indent 4 }}
+{{- end }}
+  name: {{.Values.common.dataease.host}}
+spec:
+  rules:
+    - host: {{.Values.ingress.host}}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+{{ if (eq .Values.DataEase.engine_mode "community")}}
+              service:
+                name: {{.Values.common.dataease.host}}
+                port:
+                  number: 8100
+{{end}}
+{{ if (eq .Values.DataEase.engine_mode "enterprise")}}
+              service:
+                name: {{.Values.apisix.host}}
+                port:
+                  number: 9080
+{{end}}
+
+{{if .Values.ingress.https.enabled}}
+  tls:
+    - hosts:
+        - {{.Values.ingress.host}}
+      secretName: {{.Values.ingress.https.secretName}}
+{{ end }}      
+{{ end }}

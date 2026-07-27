@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dataease-application
+data:
+  application.yml: |
+    server:
+      tomcat:
+        connection-timeout: 70000
+      servlet:
+        context-path: {{.Values.DataEase.context_path}}
+    spring:
+      servlet:
+        multipart:
+          max-file-size: 500MB
+          max-request-size: 500MB
+      datasource:
+        url: jdbc:mysql://{{.Values.common.mysql.host}}:{{.Values.common.mysql.port}}/dataease?autoReconnect=false&useUnicode=true&characterEncoding=UTF-8&characterSetResults=UTF-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+        username: root
+        password: {{.Values.common.mysql.password}}
+    dataease:
+      login_timeout: {{.Values.DataEase.logout_time}}
+      apisix-api:
+        domain: http://{{.Values.apisix.host}}:9180
+        key: {{.Values.apisix.key}}
+      playwright-server: {{.Values.DataEase.playwright_server}}
+      dataease-servers: {{.Values.DataEase.dataease_servers}}
+      #dataease-server: dataease
+      export:
+        views:
+          limit: {{.Values.DataEase.views_limit}}
+        dataset:
+          limit: {{.Values.DataEase.dataset_limit}}
+      origin-list: {{.Values.DataEase.orgin_list}}
+    task:
+      executor:
+        address: http://{{.Values.synctask.host}}:9001
+        log:
+          path: /opt/dataease2.0/logs/sync-task/task-handler-log
+{{ if and (eq .Values.DataEase.engine_mode "enterprise") .Values.apisix.enabled }}
+  config.yml: |
+    apisix:
+      node_listen: 9080              # APISIX listening port
+      enable_ipv6: false
+
+      enable_control: true
+      control:
+        ip: "0.0.0.0"
+        port: 9092
+
+    deployment:
+      admin:
+        allow_admin:
+          - 0.0.0.0/0
+
+        admin_key:
+          - name: "admin"
+            key: {{.Values.apisix.key}}
+            role: admin
+
+      etcd:
+        host:
+          - "http://{{.Values.apisixetcd.host}}:2379"
+        prefix: "/apisix"
+        timeout: 30
+{{end}}
