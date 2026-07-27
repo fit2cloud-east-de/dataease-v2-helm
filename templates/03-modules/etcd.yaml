@@ -1,0 +1,61 @@
+{{ if and (eq .Values.DataEase.engine_mode "enterprise") .Values.apisixetcd.enabled }}  
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{.Values.apisixetcd.host}}
+spec:
+  replicas: {{.Values.apisixetcd.replicas}}
+  serviceName: {{.Values.apisixetcd.host}}
+  selector:
+    matchLabels:
+      app: {{.Values.apisixetcd.host}}
+  template:
+    metadata:
+      labels:
+        app: {{.Values.apisixetcd.host}}
+    spec:
+      containers:
+        - name: {{.Values.apisixetcd.host}}
+          image: {{.Values.common.imagePrefix}}{{.Values.apisixetcd.image}}:{{.Values.apisixetcd.imageTag}}
+          imagePullPolicy: {{.Values.common.imagePullPolicy}}
+          resources:
+            limits:
+              cpu: {{.Values.apisixetcd.resourceLimits.cpu}}
+              memory: {{.Values.apisixetcd.resourceLimits.memory}}
+            requests:
+              memory: 200Mi
+              cpu: 0.2
+          env:
+            - name: ETCD_ENABLE_V2
+              value: "true"
+            - name: ALLOW_NONE_AUTHENTICATION
+              value: "yes"
+            - name: ETCD_ADVERTISE_CLIENT_URLS
+              value: "http://{{.Values.apisixetcd.host}}:2379"
+          volumeMounts:
+            - mountPath: /bitnami/etcd
+              name: apisix-etcd
+      {{if ne (.Values.common.imagePullSecrets | default "nil") "nil"}}
+      imagePullSecrets:
+        - name: {{.Values.common.imagePullSecrets}}
+      {{ end }}
+      volumes:
+        - name: apisix-etcd
+          persistentVolumeClaim:
+            claimName: apisix-etcd
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{.Values.apisixetcd.host}}
+  labels:
+    app: {{.Values.apisixetcd.host}}
+spec:
+  clusterIP: None
+  selector:
+    app: {{.Values.apisixetcd.host}}
+  ports:
+    - name: tcp
+      port: 2379
+      protocol: TCP
+{{end}}

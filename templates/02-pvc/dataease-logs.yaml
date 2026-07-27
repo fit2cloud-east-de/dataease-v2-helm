@@ -1,0 +1,11 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: dataease2-logs
+spec:
+  accessModes:
+    - {{.Values.logPersistence.accessModes}}
+  resources:
+    requests:
+      storage: {{.Values.logPersistence.size}}
+  storageClassName: {{.Values.common.storageClass}}

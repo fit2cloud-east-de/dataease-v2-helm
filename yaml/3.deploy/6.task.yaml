@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sync-task-actuator
+spec:
+  replicas: 1
+  serviceName: sync-task-actuator
+  selector:
+    matchLabels:
+      app: sync-task-actuator
+  template:
+    metadata:
+      labels:
+        app: sync-task-actuator
+    spec:
+      containers:
+        - name: sync-task-actuator
+          image: registry.cn-qingdao.aliyuncs.com/dataease/dataease-sync-task:v2.9.0
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: 8
+              memory: 16G
+            requests:
+              memory: 200Mi
+              cpu: 0.2
+          ports:
+            - name: sync-task-port
+              containerPort: 9001
+          volumeMounts:
+            - mountPath: /opt/dataease2.0/logs/sync-task/task-handler-log
+              name: sync-task-logs
+      volumes:
+        - name: sync-task-logs
+          persistentVolumeClaim:
+            claimName: sync-task-logs   
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sync-task-actuator
+  labels:
+    app: sync-task-actuator
+spec:
+  clusterIP: None
+  selector:
+    app: sync-task-actuator
+  ports:
+    - name: sync-task-port
+      port: 9001
+      protocol: TCP

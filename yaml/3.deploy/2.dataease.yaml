@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dataease-v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dataease-v2
+  template:
+    metadata:
+      labels:
+        app: dataease-v2
+    spec:
+      containers:
+        - name: dataease
+          image: registry.cn-qingdao.aliyuncs.com/dataease/dataease:v2.9.0
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: 8
+              memory: 16G
+            requests:
+              memory: 512Mi
+              cpu: 0.4
+          env:
+            - name: JAVA_OPTIONS
+              value: " -Dfile.encoding=utf-8 -Xmx8192m -Xss5m -Dloader.path=/opt/apps -Dspring.config.additional-location=/opt/apps/config/"
+          ports:
+            - name: tcp
+              containerPort: 8100
+          volumeMounts:
+            - mountPath: /opt/apps/config/application.yml
+              name: opt-dataease2-app
+              subPath: application.yml
+            - mountPath: /opt/dataease2.0/logs
+              name: opt-dataease2-logs
+            - mountPath: /opt/dataease2.0/data/static-resource
+              name: opt-dataease2-resource
+            - mountPath: /opt/dataease2.0/cache
+              name: opt-dataease2-cache             
+            - mountPath: /opt/dataease2.0/data/geo
+              name: opt-dataease2-geo
+            - mountPath: /opt/dataease2.0/data/appearance
+              name: opt-dataease2-appearance
+            - mountPath: /opt/dataease2.0/data/exportData
+              name: opt-dataease2-exportdata
+            - mountPath: /opt/dataease2.0/data/plugin
+              name: opt-dataease2-plugin
+            - mountPath: /opt/dataease2.0/data/font
+              name: opt-dataease2-font
+      volumes:
+        - name: opt-dataease2-app
+          configMap:
+            name: dataease-application
+            defaultMode: 420
+        - name: opt-dataease2-logs
+          persistentVolumeClaim:
+            claimName: dataease2-logs
+        - name: opt-dataease2-resource
+          persistentVolumeClaim:
+            claimName: dataease2-resource
+        - name: opt-dataease2-cache
+          persistentVolumeClaim:
+            claimName: dataease2-cache
+        - name: opt-dataease2-geo
+          persistentVolumeClaim:
+            claimName: dataease2-geo
+        - name: opt-dataease2-appearance
+          persistentVolumeClaim:
+            claimName: dataease2-appearance
+        - name: opt-dataease2-exportdata
+          persistentVolumeClaim:
+            claimName: dataease2-exportdata
+        - name: opt-dataease2-plugin
+          persistentVolumeClaim:
+            claimName: dataease2-plugin
+        - name: opt-dataease2-font
+          persistentVolumeClaim:
+            claimName: dataease2-font
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dataease-v2
+  labels:
+    app: dataease-v2
+spec:
+  clusterIP: None
+  selector:
+    app: dataease-v2
+  ports:
+    - name: tcp-8100
+      port: 8100
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dataease2-http
+  labels:
+    app: dataease-v2
+spec:
+  type: NodePort
+  selector:
+    app: dataease-v2
+  ports:
+  - port: 8100
+    targetPort: 8100
+    nodePort: 30082
