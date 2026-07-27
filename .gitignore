@@ -1,0 +1,7 @@
+dist/
+*.tgz
+.idea/
+.vscode/
+*.swp
+.DS_Store
+release/
